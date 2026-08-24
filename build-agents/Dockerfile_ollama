@@ -1,0 +1,9 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y ca-certificates curl zstd && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+RUN curl -L https://github.com/ollama/ollama/releases/download/v0.32.14/ollama-linux-amd64.tar.zst | tar -I zstd -xf - -C /usr
+
+ENTRYPOINT ["/usr/bin/ollama"]
