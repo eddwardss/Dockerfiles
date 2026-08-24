@@ -1,0 +1,5 @@
+docker run -it --rm --net=host \
+  -v /mnt/newdisk/ollama_models:/root/.ollama \
+  -v "$(pwd)":/workspace -w /workspace \
+  --entrypoint "" \
+  ollama-debian12 sh -c "ollama serve & sleep 3 && ollama create qwen2.5-coder-3b -f /workspace/Modelfile"

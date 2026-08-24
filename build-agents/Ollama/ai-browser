@@ -1,0 +1,69 @@
+#!/bin/sh
+
+WEBUI_DIR="$HOME/.local/share/ai-webui"
+PID_FILE="/tmp/ai-webui.pid"
+PORT=3666
+
+# Функция проверки статуса сервера
+check_status() {
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        if kill -0 "$PID" 2>/dev/null; then
+            return 0 # Работает
+        fi
+    fi
+    return 1 # Не работает
+}
+
+case "$1" in
+    "start"|"")
+        # 1. Проверяем Олламу в Docker
+        if ! docker ps --format '' | grep -Eq "^ollama-server$"; then
+            echo "Фоновый сервер Ollama выключен. Запускаю через systemd..."
+            systemctl --user start ollama-docker.service
+            sleep 2
+        fi
+
+        # 2. Запускаем веб-сервер Python, если он еще не запущен
+        if check_status; then
+            echo "Веб-интерфейс уже запущен (PID: $(cat $PID_FILE))."
+        else
+            echo "Запускаю легковесный веб-сервер в папе интерфейса..."
+            cd "$WEBUI_DIR" && python3 -m http.server $PORT > /dev/null 2>&1 &
+            # Сохраняем PID запущенного Python-процесса в файл
+            echo $! > "$PID_FILE"
+            sleep 1
+        fi
+
+        # 3. Открываем чат в браузере
+        echo "Открываю изолированный чат на порту $PORT..."
+        echo "перейдите по адресу http://127.0.0.1:$PORT"
+#        xdg-open "http://127.0.0.1:$PORT"
+        ;;
+
+    "stop")
+        if check_status; then
+            PID=$(cat "$PID_FILE")
+            echo "Останавливаю веб-сервер Python (PID: $PID)..."
+            kill "$PID"
+            rm -f "$PID_FILE"
+            echo "Веб-интерфейс успешно остановлен."
+        else
+            echo "Веб-сервер Python уже остановлен."
+            rm -f "$PID_FILE"
+        fi
+        ;;
+
+    "status")
+        if check_status; then
+            echo "Статус: Веб-интерфейс РАБОТАЕТ (PID: $(cat $PID_FILE), Порт: $PORT)."
+        else
+            echo "Статус: Веб-интерфейс ОСТАНОВЛЕН."
+        fi
+        ;;
+
+    *)
+        echo "Использование: ai-browser [start | stop | status]"
+        exit 1
+        ;;
+esac

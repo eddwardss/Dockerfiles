@@ -1,0 +1,11 @@
+#!/bin/sh
+if [ ! -d "/mnt/newdisk/ollama_models" ]; then
+    echo "Ошибка: Диск с моделями по пути /mnt/newdisk/ollama_models не найден."
+    exit 1
+fi
+
+# Запускаем интерактивный изолированный чат
+exec docker run -it --rm --net=host \
+  -v /mnt/newdisk/ollama_models:/root/.ollama \
+  -v "$(pwd)":/workspace -w /workspace \
+  ollama-debian12 run qwen2.5-coder-3b:latest "$@"

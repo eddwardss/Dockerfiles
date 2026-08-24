@@ -1,0 +1,14 @@
+docker run -it --rm \
+  --net=host \
+  -v /mnt/newdisk/builds:/workspace \
+  -v /mnt/newdisk/builds/.interpreter_metadata:/root/.cache/open-interpreter \
+  -w /workspace \
+  -e OPENAI_API_BASE="http://localhost:11434/v1" \
+  -e OPENAI_API_KEY="ollama" \
+  my-interpreter --model openai/qwen2.5-coder-3b:latest -y \
+  --context_window 16384 \
+  --max_tokens 4096 \
+--system_message "You are Qwen2.5-Coder, a local large language model trained by Alibaba Cloud. 
+You are running locally via Ollama on the user's Linux machine. 
+Answer user requests directly as a professional coding assistant. 
+If asked who you are, explicitly state you are Qwen, not OpenAI."

@@ -1,0 +1,30 @@
+#!/bin/sh
+
+if [ ! -d "/mnt/newdisk/ollama_models" ]; then
+    echo "Ошибка: Диск с моделями не смонтирован."
+    exit 1
+fi
+
+case "$1" in
+    "start")
+        if docker ps -a --format '' | grep -Eq "^ollama-server$"; then
+            echo "Контейнер ollama-server уже существует. Перезапускаю..."
+            docker start ollama-server
+        else
+            docker run -d --net=host --restart unless-stopped \
+              -v /mnt/newdisk/ollama_models:/root/.ollama \
+              --name ollama-server ollama-debian12 serve
+            echo "Фоновый CPU-сервер Ollama запущен на порту 11434."
+        fi
+        ;;
+    "stop")
+        docker stop ollama-server
+        echo "Фоновый сервер Ollama успешно остановлен."
+        ;;
+    "status")
+        docker ps -f name=ollama-server
+        ;;
+    *)
+        echo "Использование: ai-server start | stop | status"
+        ;;
+esac

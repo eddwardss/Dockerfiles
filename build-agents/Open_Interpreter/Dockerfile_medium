@@ -1,0 +1,15 @@
+FROM python:3.12-slim
+
+# Устанавливаем ВСЕ основные компиляторы и утилиты сборки
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    nano \
+    build-essential \    # Сюда входят gcc, g++, make для C/C++
+    nodejs \             # Для JavaScript
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+RUN pip install --no-cache-dir open-interpreter
+ENV EDITOR=nano
+ENTRYPOINT ["interpreter"]

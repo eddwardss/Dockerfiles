@@ -1,0 +1,10 @@
+docker run -it --rm --net=host \
+  -v /mnt/newdisk/builds:/workspace \
+  -v /mnt/newdisk/builds/.aider_metadata:/root/.aider \
+  -w /workspace \
+  -e OPENAI_API_BASE="http://localhost:11434/v1" \
+  -e OPENAI_API_KEY="ollama" \
+  my-aider --model openai/qwen2.5-coder-3b:latest \
+  --edit-format whole \
+  --chat-language russian \
+  --no-show-model-warnings

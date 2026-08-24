@@ -1,0 +1,19 @@
+[Unit]
+Description=Ollama Inside Docker Debian12 (CPU Only)
+After=default.target
+
+[Service]
+Type=simple
+TimeoutStartSec=0
+#Environment="OLLAMA_ORIGINS=*"
+ExecStartPre=-/usr/bin/docker stop ollama-server
+ExecStartPre=-/usr/bin/docker rm ollama-server
+ExecStart=/usr/bin/docker run --net=host \
+  -v /mnt/newdisk/ollama_models:/root/.ollama \
+  --name ollama-server ollama-debian12 serve
+ExecStop=/usr/bin/docker stop ollama-server
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

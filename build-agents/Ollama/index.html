@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Локальный ИИ Чат</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1e1e2e; color: #cdd6f4; max-width: 95%; margin: 20px auto; padding: 10px; }
+
+        /* Главное окно чата */
+        #chat { height: 450px; min-height: 200px; min-width: 300px; border: 1px solid #45475a; background: #11111b; overflow: auto; padding: 15px; border-radius: 8px; margin-bottom: 15px; resize: both; }
+
+        /* Индивидуальные блоки сообщений */
+        .msg { margin-bottom: 12px; padding: 12px; border-radius: 6px; line-height: 1.5; white-space: pre-wrap; overflow: auto; min-height: 40px; min-width: 150px; }
+        .user { background: #313244; text-align: right; color: #89b4fa; resize: both; }
+        .ai { background: #181825; color: #a6e3a1; border-left: 4px solid #a6e3a1; resize: both; text-align: left; }
+
+        /* Контейнер ввода теперь вертикальный */
+        #input-area { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+
+        /* Поле ввода (textarea) теперь занимает всю ширину и может тянуться во все стороны */
+        textarea { width: calc(100% - 26px); padding: 12px; background: #313244; border: 1px solid #45475a; color: #cdd6f4; border-radius: 6px; font-size: 16px; resize: both; min-height: 40px; min-width: 200px; height: 60px; font-family: inherit; }
+
+        /* Кнопка встает снизу справа от формы */
+        button { align-self: baseline; padding: 12px 24px; background: #89b4fa; border: none; color: #11111b; font-weight: bold; border-radius: 6px; cursor: pointer; height: 45px; }
+        button:hover { background: #b4befe; }
+    </style>
+</head>
+<body>
+    <h2>Изолированный CPU-чат (Qwen 3B)</h2>
+    <div id="chat"></div>
+    <div id="input-area">
+        <textarea id="prompt" placeholder="Введите ваш запрос (Ctrl+Enter для отправки, Shift+Enter для новой строки)..." onkeydown="if(event.key==='Enter' && event.ctrlKey) { event.preventDefault(); send(); }"></textarea>
+        <button onclick="send()">Отправить</button>
+    </div>
+
+    <script>
+        async function send() {
+            const input = document.getElementById('prompt');
+            const chat = document.getElementById('chat');
+            const text = input.value.trim();
+            if (!text) return;
+
+            chat.innerHTML += `<div class="msg user"><b>Вы:</b>\n${text}</div>`;
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+
+            const aiDiv = document.createElement('div');
+            aiDiv.className = 'msg ai';
+            aiDiv.innerHTML = '<b>ИИ:</b> Думает...';
+            chat.appendChild(aiDiv);
+
+            try {
+                const response = await fetch('http://localhost:11434/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'qwen2.5-coder-3b:latest',
+                        prompt: text,
+                        stream: false
+                    })
+                });
+                const data = await response.json();
+                aiDiv.innerHTML = `<b>ИИ:</b>\n${data.response}`;
+            } catch (err) {
+                aiDiv.innerHTML = `<b>Ошибка:</b> Не удалось подключиться к Ollama. Проверьте, запущен ли сервер systemctl.`;
+            }
+            chat.scrollTop = chat.scrollHeight;
+        }
+    </script>
+</body>
+</html>

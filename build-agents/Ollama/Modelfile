@@ -1,0 +1,4 @@
+cat << 'EOF' > ~/Modelfile
+FROM /root/.ollama/qwen2.5-coder-7b-instruct-q4_k_m.gguf
+PARAMETER num_ctx 16384
+EOF
