@@ -5,12 +5,17 @@ FROM debian:trixie
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Connect contrib/non-free and install packages for building
-RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources && \
-    apt-get update && apt-get install -y \
+RUN rm -rf /etc/apt/sources.list.d/* && \
+    echo "deb http://deb.debian.org/debian/ trixie main contrib non-free non-free-firmware" > /etc/apt/sources.list && \
+    echo "deb http://deb.debian.org/debian/ trixie-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
+    echo "deb http://security.debian.org/debian-security/ trixie-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
+    apt-get -o Acquire::ForceIPv4=true update && \
+    apt-get -o Acquire::ForceIPv4=true install -y \
     build-essential gfortran git ccache checkinstall pkg-config \
     tar zip unzip rsync cpio alien patchelf file gettext \
-    curl wget vim-tiny locales mc \
-    rustc cargo golang-go ruby ruby-dev \
+    curl wget neovim locales mc ca-certificates \
+    golang-go ruby ruby-dev \
+    clang libclang-dev  \
     zstd libzstd-dev \
     openssl libssl-dev gnupg libssh-dev libssh2-1-dev libncurses-dev \
     perl perl-modules \
@@ -27,12 +32,16 @@ RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmwa
     libimlib2-dev libpango1.0-dev libglib2.0-dev tk-dev liblua5.4-dev \
     libjpeg-dev libpng-dev libgif-dev libreadline-dev libgtk-3-dev \
     libgl-dev mesa-common-dev libglu-dev osspd \
-    libegl1-mesa-dev libgles2-mesa-dev \
-    libsndfile1-dev libpulse-dev libasound2-dev libdbus-1-dev && \
-    apt-get install -y --no-install-recommends asciidoc-base intltool xmlto && \
-    rm -rf /var/lib/apt/lists/*
+    libegl-dev libgles-dev libegl1-mesa-dev libgles2-mesa-dev \
+    libsndfile1-dev libpulse-dev libasound2-dev libdbus-1-dev \
+    libpipewire-0.3-dev libsystemd-dev \
+    libva-dev libgbm-dev libpam0g-dev && \
+    apt-get -o Acquire::ForceIPv4=true install -y --no-install-recommends asciidoc-base intltool xmlto && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -f /etc/apt/apt.conf.dev
 
-RUN update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 10
+RUN update-alternatives --install /usr/bin/vim vim /usr/bin/nvim 60 && \
+    update-alternatives --install /usr/bin/vi vi /usr/bin/nvim 60
 
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     sed -i -e 's/# ru_RU.UTF-8 UTF-8/ru_RU.UTF-8 UTF-8/' /etc/locale.gen && \
@@ -42,13 +51,24 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
-ENV EDITOR=vim
-ENV VISUAL=vim
+ENV EDITOR=nvim
+ENV VISUAL=nvim
 
 # Enable ccache to speed up C/C++ rebuilds
 ENV PATH="/usr/lib/ccache:$PATH"
 
 # Allow pip to install packages globally within an isolated container
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+# Exporting libclang library paths for the Rust compiler
+ENV LIBCLANG_PATH=/usr/lib/llvm-19/lib
+
+# Isolated installation of the current Rust
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV CARGO_HOME=/usr/local/cargo
+ENV PATH=/usr/local/cargo/bin:$PATH
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal && \
+    chmod -R a+w /usr/local/cargo
 
 WORKDIR /build
