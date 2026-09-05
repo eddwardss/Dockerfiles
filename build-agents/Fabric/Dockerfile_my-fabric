@@ -1,0 +1,26 @@
+FROM golang:1.26-alpine AS builder
+
+RUN apk add --no-cache git
+RUN go install github.com/danielmiessler/fabric/cmd/fabric@latest
+RUN mkdir -p /root/.config/fabric/patterns /root/.config/fabric/strategies && \
+    git clone https://github.com/danielmiessler/fabric.git /tmp/fabric-repo && \
+    cp -r /tmp/fabric-repo/data/patterns/* /root/.config/fabric/patterns/ && \
+    cp -r /tmp/fabric-repo/data/strategies/* /root/.config/fabric/strategies/ && \
+    rm -rf /tmp/fabric-repo
+
+RUN touch /root/.config/fabric/.env
+
+FROM alpine:latest
+
+RUN apk add --no-cache git vim curl ca-certificates tzdata
+
+WORKDIR /workspace
+
+COPY --from=builder /go/bin/fabric /usr/local/bin/fabric
+COPY --from=builder /root/.config/fabric /root/.config/fabric
+
+RUN git config --global --add safe.directory '*'
+ENV EDITOR=vim
+ENV VISUAL=vim
+
+ENTRYPOINT ["fabric"]
